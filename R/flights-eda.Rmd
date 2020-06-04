@@ -1,0 +1,77 @@
+---
+title: "Flights EDA"
+output: html_notebook
+---
+
+```{r setup}
+# Packages ----
+library(sparklyr)
+library(tidyverse)
+library(nycflights13)
+
+# Plot defaults ----
+theme_set(theme_bw())
+```
+
+```{r spark-connection}
+spark_home <- system("databricks-connect get-spark-home", intern = TRUE)
+sc <- spark_connect(method = "databricks", spark_home = spark_home)
+```
+
+## Data
+Data is a public Databricks dataset stored in DBFS.
+```{r}
+all_flights <- spark_read_csv(sc, name = "all_flights", path = "/databricks-datasets/asa/airlines")
+```
+
+Create a persistent Spark table for later reference
+```{r}
+spark_write_table(all_flights, name = "all_flights", mode = "overwrite", options = list(path = "dbfs:/flights"))
+```
+
+## Exploration
+How many rows of data are included in `all_flights`
+```{r}
+tally(all_flights)
+```
+
+What columns are included in `all_flights`
+```{r}
+head(all_flights)
+```
+
+How many records exist for each year?
+```{r}
+(year_counts <- count(all_flights, year) %>% 
+  arrange(year))
+```
+
+```{r}
+year_counts %>% 
+  ggplot(aes(x = year, y = n)) +
+  geom_col() +
+  labs(title = "Flight Records per Year",
+       x = "Year",
+       y = "Flights")
+```
+
+How many airlines are represented in the data?
+```{r}
+all_flights %>% 
+  left_join(tbl(sc, "airlines"), by = c("UniqueCarrier" = "carrier")) %>% 
+  count(UniqueCarrier, name) %>% 
+  arrange(desc(n))
+```
+
+```{r}
+
+```
+
+
+
+## Disconnect
+```{r}
+spark_disconnect(sc)
+```
+
+
