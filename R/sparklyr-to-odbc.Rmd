@@ -1,0 +1,48 @@
+---
+title: "sparklyr to ODBC"
+output: html_notebook
+---
+
+## Sparklyr
+```{r sparklyr}
+library(tidyverse)
+library(sparklyr)
+
+spark_home <- system("databricks-connect get-spark-home", intern = TRUE)
+sc <- spark_connect(method = "databricks", spark_home = spark_home)
+
+all_flights <- tbl(sc, "all_flights")
+
+all_flights %>% 
+  count(Year) %>% 
+  arrange(Year)
+
+spark_disconnect(sc)
+```
+
+## ODBC
+```{r odbc}
+library(tidyverse)
+library(DBI)
+
+sc <- dbConnect(odbc::odbc(), "databricks")
+
+all_flights <- tbl(sc, "all_flights")
+
+all_flights %>% 
+  count(Year) %>% 
+  arrange(Year)
+
+dbDisconnect(sc)
+```
+
+
+
+
+
+
+
+
+
+
+
