@@ -21,18 +21,55 @@ sc <- spark_connect(method = "databricks", spark_home = spark_home)
 ## Data
 Data is a public Databricks dataset stored in DBFS.
 ```{r}
-all_flights <- spark_read_csv(sc, name = "all_flights", path = "/databricks-datasets/asa/airlines")
+if (!("all_flights" %in% odbc::dbListTables(sc))) {
+  cols <- c("Year" = "integer",
+            "Month" = "integer",
+            "DayofMonth" = "integer",
+            "DayOfWeek" = "integer",
+            "DepTime" = "integer",
+            "CRSDepTime" = "integer",
+            "ArrTime" = "integer",
+            "CRSArrTime" = "integer",
+            "UniqueCharrier" = "character",
+            "FlightNum" = "integer",
+            "TailNum" = "integer",
+            "ActualElapsedTime" = "integer",
+            "CRSElapsedTime" = "integer",
+            "AirTime" = "integer",
+            "ArrDelay" = "integer",
+            "DepDelay" = "integer",
+            "Origin" = "character",
+            "Dest" = "character",
+            "Distance" = "integer",
+            "TaxiIn" = "integer",
+            "TaxiOut" = "integer",
+            "Cancelled" = "integer",
+            "CancellationCode" = "character",
+            "Diverted" = "integer",
+            "CarrierDelay" = "integer",
+            "WeatherDelay" = "integer",
+            "NASDelay" = "integer",
+            "SecurityDelay" = "integer",
+            "LateAircraftDelay" = "integer")
+  
+  spark_read_csv(sc, 
+                 name = "all_flights", 
+                 path = "/databricks-datasets/asa/airlines") %>% 
+    filter(!is.na(Year)) %>% 
+   spark_write_table(name = "all_flights", mode = "overwrite", options = list(path = "dbfs:/flights")) 
+}
 ```
 
-Create a persistent Spark table for later reference
+Refer to the persistent table
 ```{r}
-spark_write_table(all_flights, name = "all_flights", mode = "overwrite", options = list(path = "dbfs:/flights"))
+all_flights <- tbl(sc, "all_flights")
 ```
 
 ## Exploration
 How many rows of data are included in `all_flights`
 ```{r}
-tally(all_flights)
+(n_flights <- tally(all_flights) %>% 
+   collect())
 ```
 
 What columns are included in `all_flights`
@@ -63,8 +100,25 @@ all_flights %>%
   arrange(desc(n))
 ```
 
-```{r}
+Visualization is a powerful tool for exploring data. However, in this case we have `r n_flights` records, so pulling all of the data into R for visualization isn't ideal. Instead, we can use existing tools to compute summarizations of the data using Spark and then use ggplot2 to visualize those summarizations.
 
+Distribution of arrival delays by airline
+```{r}
+all_flights %>% 
+  
+```
+
+
+```{r}
+all_flights %>% 
+  dbplot:::dbplot_boxplot(UniqueCarrier, ArrDelay)
+```
+
+Unique flights defined by origin and destination
+```{r}
+all_flights %>% 
+  count(Origin, Dest) %>% 
+  arrange(desc(n))
 ```
 
 
