@@ -103,17 +103,20 @@ server <- function(input, output) {
     # Outputs ----
     output$n_records <- renderValueBox({
         valueBox(value = n_records(),
-                 subtitle = "Total Flights")
+                 subtitle = "Total Flights",
+                 icon = icon("plane"))
     })
     
     output$flight_length <- renderValueBox({
         valueBox(value = round(flight_length(), 2),
-                 subtitle = "Average Flight Time")
+                 subtitle = "Average Flight Time",
+                 icon = icon("clock"))
     })
     
     output$dep_delay <- renderValueBox({
         valueBox(value = round(dep_delay(), 2),
-                 subtitle = "Average Departure Delay")
+                 subtitle = "Average Departure Delay",
+                 icon = icon("plane-departure"))
     })
     
     output$flights_plot <- renderPlot({
