@@ -41,9 +41,8 @@ sidebar <- dashboardSidebar(
 
 body <- dashboardBody(
     fluidRow(
-        valueBoxOutput("n_records"),
-        valueBoxOutput("dep_delay"),        
-        valueBoxOutput("flight_length")
+        valueBoxOutput("n_records", width = 6),
+        valueBoxOutput("dep_delay", width = 6)
     ),
     fluidRow(
         box(plotOutput("flights_plot"), width = 12)
@@ -94,7 +93,9 @@ server <- function(input, output) {
             filter(airline %in% local(input$airlines),
                    Year %in% years) %>% 
             count(airline, Year, Month) %>% 
-            collect()
+            collect() %>% 
+            mutate(n = as.integer(n))
+        
     }, ignoreNULL = FALSE)
     
     
@@ -109,16 +110,12 @@ server <- function(input, output) {
                  subtitle = "Average Departure Delay")
     })
     
-    output$flight_length <- renderValueBox({
-        valueBox(value = round(flight_length(), 2),
-                 subtitle = "Average Flight Time")
-    })
-    
     output$flights_plot <- renderPlot({
         plot_data() %>% 
-            ggplot(aes(x = Month, y = n, fill = airline)) +
+            ggplot(aes(x = Month, y = n, col = airline)) +
             facet_wrap(~Year) +
-            geom_area() +
+            geom_point() + 
+            geom_line() +
             scale_y_continuous(labels = scales::comma) +
             scale_x_continuous(breaks = 1:12) +
             theme_bw() +
@@ -126,7 +123,7 @@ server <- function(input, output) {
             labs(title = "Flights per Year",
                  x = "Month",
                  y = "Flights",
-                 fill = "Airline")
+                 col = "Airline")
     })
     
 }
