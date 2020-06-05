@@ -1,6 +1,7 @@
 # Spark Summit 2020
 
-[Talk Abstract/Summary]
+Scaling [R](https://cran.r-project.org/) and [Shiny](https://shiny.rstudio.com/)
+applications using RStudio and Databricks.
 
 [![Title Slide](img/title-slide.png)](slides/spark-summit-2020.pdf)
 
