@@ -19,11 +19,13 @@ sc <- spark_connect(method = "databricks", spark_home = spark_home)
 ```
 
 ## Data
-Data is a public Databricks dataset stored in DBFS.
+Airlines data is a public Databricks dataset stored in DBFS. Airline codes are scraped from
+[Wikipedia](https://en.wikipedia.org/wiki/List_of_airline_codes) and then loaded
+into Spark.
 ```{r}
 if (!("all_flights" %in% odbc::dbListTables(sc))) {
   spark_read_csv(sc, 
-                 name = "all_flights", 
+                 name = "all_flights_raw", 
                  path = "/databricks-datasets/asa/airlines") %>% 
     mutate(
       DepTime = as.integer(DepTime),
@@ -43,13 +45,24 @@ if (!("all_flights" %in% odbc::dbListTables(sc))) {
       SecurityDelay = as.integer(SecurityDelay),
       LateAircraftDelay = as.integer(LateAircraftDelay)
     ) %>% 
-   spark_write_table(name = "all_flights", mode = "overwrite", options = list(path = "dbfs:/flights")) 
+    left_join(tbl(sc, "airline_codes"), by = c("UniqueCarrier" = "iata")) %>% 
+    filter(!is.na(airline)) %>% 
+    spark_write_table(name = "all_flights", 
+                      mode = "overwrite", 
+                      partition_by = c("airline", "Year"),
+                      options = list(path = "dbfs:/flights"))
 }
 ```
 
-Refer to the persistent table
+
+Refer to the persistent table and cache it in memory
 ```{r}
+tbl_cache(sc, "all_flights")
 all_flights <- tbl(sc, "all_flights")
+```
+
+```{r}
+class(all_flights)
 ```
 
 ## Exploration
@@ -66,13 +79,14 @@ head(all_flights)
 
 How many records exist for each year?
 ```{r}
-(year_counts <- count(all_flights, year) %>% 
-  arrange(year))
+(year_counts <- count(all_flights, Year) %>% 
+   arrange(Year) %>% 
+   collect())
 ```
 
 ```{r}
 year_counts %>% 
-  ggplot(aes(x = year, y = n)) +
+  ggplot(aes(x = Year, y = n)) +
   geom_col() +
   labs(title = "Flight Records per Year",
        x = "Year",
@@ -82,24 +96,22 @@ year_counts %>%
 How many airlines are represented in the data?
 ```{r}
 all_flights %>% 
-  left_join(tbl(sc, "airlines"), by = c("UniqueCarrier" = "carrier")) %>% 
-  count(UniqueCarrier, name) %>% 
+  count(airline) %>% 
   arrange(desc(n))
 ```
 
-Visualization is a powerful tool for exploring data. However, in this case we have `r n_flights` records, so pulling all of the data into R for visualization isn't ideal. Instead, we can use existing tools to compute summarizations of the data using Spark and then use ggplot2 to visualize those summarizations.
+Visualization is a powerful tool for exploring data. However, in this case we
+have `r n_flights` records, so pulling all of the data into R for visualization
+isn't ideal. Instead, we can use existing tools to compute summarizations of the
+data using Spark and then use ggplot2 to visualize those summarizations.
 
-Distribution of arrival delays by airline
+Distribution of departure delays by airline:
 ```{r}
 all_flights %>% 
-  
+  dbplot:::dbplot_boxplot(airline, DepDelay) +
+  coord_flip()
 ```
 
-
-```{r}
-all_flights %>% 
-  dbplot:::dbplot_boxplot(UniqueCarrier, ArrDelay)
-```
 
 Unique flights defined by origin and destination
 ```{r}
@@ -111,16 +123,49 @@ all_flights %>%
 What's the relationship between the different delay fields?
 ```{r}
 all_flights %>% 
-  filter(!is.na(DepDelay)) %>% 
+  filter(!is.na(DepDelay),
+         !is.na(LateAircraftDelay)) %>% 
   select(contains("Delay")) %>% 
-  head()
+  head(50)
+```
+
+### Airline Comparison
+Compare airlines across different metrics
+```{r}
+(distinct_airlines <- all_flights %>% 
+   select(airline) %>% 
+   distinct() %>% 
+   collect())
 ```
 
 
+```{r}
+selected_airlines <- c("Southwest Airlines",
+                       "Delta Air Lines")
+```
+
+```{r}
+flights_per_year <- all_flights %>% 
+  filter(airline %in% selected_airlines) %>% 
+  count(airline, Year, Month) %>% 
+  collect()
+```
+
+```{r}
+flights_per_year %>% 
+  ggplot(aes(x = Month, y = n, fill = airline)) +
+  facet_wrap(~Year) +
+  geom_area() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(breaks = 1:12) +
+  theme(axis.text.x = element_blank()) +
+  labs(title = "Flights per Year",
+       x = "Month",
+       y = "Flights",
+       fill = "Airline")
+```
 
 ## Disconnect
 ```{r}
 spark_disconnect(sc)
 ```
-
-
