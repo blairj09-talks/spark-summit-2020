@@ -1,0 +1,27 @@
+---
+title: "Airline Codes"
+output: html_notebook
+---
+
+```{r setup}
+library(rvest)
+library(tidyverse)
+```
+
+```{r}
+url <- "https://en.wikipedia.org/wiki/List_of_airline_codes"
+```
+
+```{r}
+codes <- read_html(url)
+```
+
+```{r}
+airline_codes <- codes %>% 
+  html_nodes("table") %>% 
+  html_table(fill = TRUE)
+```
+
+```{r}
+write_csv(airline_codes[[1]], "data/airline-codes.csv")
+```
