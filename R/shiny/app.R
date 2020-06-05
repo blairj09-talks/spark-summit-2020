@@ -41,8 +41,9 @@ sidebar <- dashboardSidebar(
 
 body <- dashboardBody(
     fluidRow(
-        valueBoxOutput("n_records", width = 6),
-        valueBoxOutput("dep_delay", width = 6)
+        valueBoxOutput("n_records"),
+        valueBoxOutput("flight_length"),
+        valueBoxOutput("dep_delay"),
     ),
     fluidRow(
         box(plotOutput("flights_plot"), width = 12)
@@ -85,7 +86,7 @@ server <- function(input, output) {
             summarise(avg_length = mean(AirTime, na.rm = TRUE)) %>% 
             collect() %>% 
             pull(avg_length)
-    })
+    }, ignoreNULL = FALSE)
     
     plot_data <- eventReactive(input$go, {
         years <- input$years[1]:input$years[2]
@@ -103,6 +104,11 @@ server <- function(input, output) {
     output$n_records <- renderValueBox({
         valueBox(value = n_records(),
                  subtitle = "Total Flights")
+    })
+    
+    output$flight_length <- renderValueBox({
+        valueBox(value = round(flight_length(), 2),
+                 subtitle = "Average Flight Time")
     })
     
     output$dep_delay <- renderValueBox({
