@@ -6,6 +6,7 @@ output: html_notebook
 ```{r setup}
 library(rvest)
 library(tidyverse)
+library(janitor)
 ```
 
 ```{r}
@@ -17,11 +18,20 @@ codes <- read_html(url)
 ```
 
 ```{r}
-airline_codes <- codes %>% 
+airline_codes_raw <- codes %>% 
   html_nodes("table") %>% 
   html_table(fill = TRUE)
 ```
 
 ```{r}
-write_csv(airline_codes[[1]], "data/airline-codes.csv")
+airline_codes_raw <- airline_codes_raw[[1]]
+```
+
+```{r}
+airline_codes_raw %>% 
+  clean_names() %>% 
+  filter(!is.na(iata),
+         iata != "") %>% 
+  select(iata, airline, country_region) %>% 
+  write_csv("data/airline-codes.csv")
 ```
