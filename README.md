@@ -10,12 +10,10 @@ applications using RStudio and Databricks.
 - Follow the [Client setup
 instructions](https://docs.databricks.com/dev-tools/databricks-connect.html#client-setup)
 for Databricks Connect. 
+
 ```
-pip install -U databricks-connect==6.3.1
+pip install -U databricks-connect
 ```
-    - Note: There is some messaging when running `databricks-connect` about
-    including `spark.databricks.service.server.enabled true` in the Spark conf.
-    This isn't necessary in Databricks Runtime > 5.3.
 
 ## Connecting
 ### Spark
