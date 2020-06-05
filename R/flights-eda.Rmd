@@ -121,16 +121,17 @@ flights_per_year <- all_flights %>%
 
 ```{r}
 flights_per_year %>% 
-  ggplot(aes(x = Month, y = n, fill = airline)) +
+  ggplot(aes(x = Month, y = n, col = airline)) +
   facet_wrap(~Year) +
-  geom_area() +
+  geom_point() +
+  geom_line() +
   scale_y_continuous(labels = scales::comma) +
   scale_x_continuous(breaks = 1:12) +
   theme(axis.text.x = element_blank()) +
   labs(title = "Flights per Year",
        x = "Month",
        y = "Flights",
-       fill = "Airline")
+       col = "Airline")
 ```
 
 ## Disconnect
