@@ -22,38 +22,6 @@ sc <- spark_connect(method = "databricks", spark_home = spark_home)
 Airlines data is a public Databricks dataset stored in DBFS. Airline codes are scraped from
 [Wikipedia](https://en.wikipedia.org/wiki/List_of_airline_codes) and then loaded
 into Spark.
-```{r}
-if (!("all_flights" %in% odbc::dbListTables(sc))) {
-  spark_read_csv(sc, 
-                 name = "all_flights_raw", 
-                 path = "/databricks-datasets/asa/airlines") %>% 
-    mutate(
-      DepTime = as.integer(DepTime),
-      ArrTime = as.integer(ArrTime),
-      TailNum = as.integer(TailNum),
-      ActualElapsedTime = as.integer(ActualElapsedTime),
-      CRSElapsedTime = as.integer(CRSElapsedTime),
-      AirTime = as.integer(AirTime),
-      ArrDelay = as.integer(ArrDelay),
-      DepDelay = as.integer(DepDelay),
-      Distance = as.integer(Distance),
-      TaxiIn = as.integer(TaxiIn),
-      TaxiOut = as.integer(TaxiOut),
-      CarrierDelay = as.integer(CarrierDelay),
-      WeatherDelay = as.integer(WeatherDelay),
-      NASDelay = as.integer(NASDelay),
-      SecurityDelay = as.integer(SecurityDelay),
-      LateAircraftDelay = as.integer(LateAircraftDelay)
-    ) %>% 
-    left_join(tbl(sc, "airline_codes"), by = c("UniqueCarrier" = "iata")) %>% 
-    filter(!is.na(airline)) %>% 
-    spark_write_table(name = "all_flights", 
-                      mode = "overwrite", 
-                      partition_by = c("airline", "Year"),
-                      options = list(path = "dbfs:/flights"))
-}
-```
-
 
 Refer to the persistent table and cache it in memory
 ```{r}
